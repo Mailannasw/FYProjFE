@@ -1,0 +1,24 @@
+<div class="card flex justify-center">
+  <p-autocomplete [(ngModel)]="value"
+                  [suggestions]="filteredWords"
+                  (completeMethod)="search($event)">
+  </p-autocomplete>
+
+  <p-button (click)="showDialog()" label="Show"></p-button>
+
+  <p-dialog header="{{value}}" [(visible)]="visible"
+            [modal]="true"
+            [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }"
+            [style]="{ width: '50vw' }"
+            [draggable]="false"
+            [resizable]="false">
+    <div *ngIf="definition">
+      <p>{{definition.definition}}</p>
+      <p><br><a *ngIf="definition.link" [href]="definition.link" target="_blank">Want a more detailed description? Click to
+        visit the MtG Fandom Wiki for {{value}}!</a></p>
+    </div>
+    <div *ngIf="!definition">
+      <p>Loading definition...</p>
+    </div>
+  </p-dialog>
+</div>

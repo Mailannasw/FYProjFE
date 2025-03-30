@@ -1,0 +1,26 @@
+<button (click)="toggleLoginDialog()"
+        class="flex items-center text-base px-3 py-2 rounded-md transition-colors">
+  {{ isLoggedIn ? 'Logout' : 'Login' }}
+</button>
+
+<p-dialog header="Login" [(visible)]="showLoginDialog"
+          [modal]="true" [style]="{ width: '400px' }"
+          [draggable]="false" [resizable]="false">
+  <div class="flex flex-col gap-4">
+    <div class="field">
+      <label for="username" class="block mb-2">Username</label>
+      <input id="username" type="text" pInputText [(ngModel)]="username" class="w-full">
+    </div>
+    <div class="field">
+      <label for="password" class="block mb-2">Password</label>
+      <input id="password" type="password" pInputText [(ngModel)]="password" class="w-full">
+    </div>
+    <div *ngIf="errorMessage" class="text-red-500 text-sm">
+      {{ errorMessage }}
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton label="Login" (click)="login()" class="mr-2"></button>
+    <button pButton label="Cancel" class="p-button-text" (click)="closeDialog()"></button>
+  </ng-template>
+</p-dialog>

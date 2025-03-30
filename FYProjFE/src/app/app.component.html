@@ -18,7 +18,7 @@ Anything in here will be consistent across the whole web app (e.g.: menu bar, he
 
     <ng-template #end>
       <div class="flex items-center gap-2">
-        <p-button label="Login" styleClass="p-button-text" [style]="{ background: 'transparent' }" />
+        <app-login (loginStatusChange)="updateMenuItems()"></app-login>
         <p-avatar image="https://primefaces.org/cdn/primeng/images/demo/avatar/amyelsner.png" shape="circle" />
       </div>
     </ng-template>

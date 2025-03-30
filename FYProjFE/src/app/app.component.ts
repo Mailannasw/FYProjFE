@@ -11,27 +11,42 @@ import { InputTextModule } from 'primeng/inputtext';
 import { CommonModule } from '@angular/common';
 import { Ripple } from 'primeng/ripple';
 import { ButtonModule } from 'primeng/button';
+import {LoginComponent} from './login/login.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Menubar, BadgeModule, AvatarModule, InputTextModule, Ripple, CommonModule, ButtonModule],
+  imports: [RouterOutlet, Menubar, BadgeModule, AvatarModule, InputTextModule, Ripple, CommonModule, ButtonModule,
+    LoginComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   standalone: true
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'FYProjFE';
-
-  // Menu bar edited from https://primeng.org/menubar
-  items: MenuItem[] | undefined;
+  items: MenuItem[] | undefined;        // Menu bar edited from https://primeng.org/menubar
 
   ngOnInit() {
+    this.updateMenuItems();
+
+    // event listener to listen for storage events to detect login/logout
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'token') {
+        this.updateMenuItems();
+      }
+    });
+  }
+
+  // if someone is logged in, show the decks menu (home always shown)
+  updateMenuItems() {
+    const isLoggedIn = !!localStorage.getItem('token');
     this.items = [
       {
         label: 'Home',
         icon: 'pi pi-home',
-      },
-      {
+      }
+    ];
+    if (isLoggedIn) {
+      this.items.push({
         label: 'Decks',
         icon: 'pi pi-search',
         items: [
@@ -44,7 +59,7 @@ export class AppComponent {
             icon: 'pi pi-server',
           },
         ],
-      },
-    ];
+      });
+    }
   }
 }

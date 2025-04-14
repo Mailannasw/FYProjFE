@@ -1,4 +1,3 @@
-/* In home.component.css */
 :host {
   display: block;
 }
@@ -7,17 +6,15 @@
   background-color: #e6d3ff !important;
 }
 
-/* Remove the problematic margin class and replace with padding */
 .flex-col {
   padding-top: 2.5rem;
 }
 
 ::ng-deep .p-autocomplete .p-inputtext {
   background-color: #e6d3ff !important;
-  color: #2c1d49 !important; /* Dark text color for contrast */
+  color: #2c1d49 !important;
 }
 
-/* Optional: Style for placeholder text */
 ::ng-deep .p-autocomplete .p-inputtext::placeholder {
   color: #6b4e8a !important;
 }

@@ -1,0 +1,396 @@
+<!-- Many components used from PrimeNG library (PrimeNG, 2025) -->
+<!-- Main container -->
+<div class="flex flex-col items-center w-full min-h-screen bg-[#2c1d49] text-[#e6d3ff] py-10 px-5">
+  <!-- Toast notification for success/error messages -->
+  <p-toast position="top-right"></p-toast>
+
+  <div class="w-4/5 max-w-4xl">
+    <h1 class="text-3xl font-bold mb-6 text-center">My Decks</h1>
+
+    <!-- Loading indicator -->
+    <div *ngIf="loading" class="flex justify-center p-4">
+      <i class="pi pi-spin pi-spinner text-4xl"></i>
+    </div>
+
+    <!-- Empty state message when no decks exist -->
+    <div *ngIf="!loading && decks.length === 0" class="text-center p-8">
+      <div class="text-lg italic">No decks found. Create a new deck in the Deck Builder.</div>
+    </div>
+
+    <!-- Deck display sections grouped by format -->
+    <ng-container *ngIf="!loading && decks.length > 0">
+      <!-- Commander Decks Section -->
+      <div *ngIf="getDecksByType('COMMANDER').length > 0" class="mb-8">
+        <h2 class="text-2xl font-semibold mb-4 pb-2 border-b border-purple-600">Commander Decks</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div *ngFor="let deck of getDecksByType('COMMANDER')" class="col-span-1">
+            <p-card styleClass="bg-[#3f2b68] text-[#e6d3ff] h-full">
+              <ng-template pTemplate="header">
+                <div class="relative w-full h-48 bg-[#2c1d49] flex justify-center items-center overflow-hidden">
+                  <!-- Commander card art -->
+                  <img *ngIf="deck.commander?.image_uris?.art_crop"
+                       [src]="deck.commander?.image_uris?.art_crop"
+                       alt="{{deck.commander?.name}}"
+                       class="w-full h-full object-cover" />
+
+                  <!-- Blank icon when no commander image is available -->
+                  <div *ngIf="!deck.commander?.image_uris?.art_crop" class="flex items-center justify-center h-full w-full bg-[#2c1d49]">
+                    <i class="pi pi-images text-6xl text-[#4b356c]"></i>
+                  </div>
+
+                  <!-- Deck name on the image -->
+                  <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 p-2">
+                    <h3 class="font-bold text-xl truncate">{{deck.deckName}}</h3>
+                  </div>
+                </div>
+              </ng-template>
+
+              <!-- Deck information -->
+              <div class="mt-2">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="font-medium">Cards:</span>
+                  <span>{{deck.cards?.length || 0}}/{{deck.sizeLimit}}</span>
+                </div>
+
+                <div class="flex justify-between items-center mb-2">
+                  <span class="font-medium">Commander:</span>
+                  <span class="truncate max-w-[200px]">{{deck.commander?.name || 'N/A'}}</span>
+                </div>
+              </div>
+
+              <!-- Action buttons in card footer -->
+              <ng-template pTemplate="footer">
+                <div class="flex justify-center gap-4">
+                  <button pButton icon="pi pi-pencil" label="Edit"
+                          class="p-button-info"
+                          (click)="viewDeck(deck.id)"></button>
+                  <button pButton icon="pi pi-trash" label="Delete"
+                          class="p-button-danger"
+                          (click)="confirmDeleteDeck(deck)"></button>
+                </div>
+              </ng-template>
+            </p-card>
+          </div>
+        </div>
+      </div>
+
+      <!-- Standard Decks Section -->
+      <div *ngIf="getDecksByType('STANDARD').length > 0" class="mb-8">
+        <h2 class="text-2xl font-semibold mb-4 pb-2 border-b border-purple-600">Standard Decks</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div *ngFor="let deck of getDecksByType('STANDARD')" class="col-span-1">
+            <p-card styleClass="bg-[#3f2b68] text-[#e6d3ff] h-full">
+              <!-- Deck name header -->
+              <div class="mt-2">
+                <div class="text-center mb-4">
+                  <h3 class="font-bold text-xl">{{deck.deckName}}</h3>
+                </div>
+
+                <!-- Card count -->
+                <div class="flex justify-between items-center mb-2">
+                  <span class="font-medium">Cards:</span>
+                  <span>{{deck.cards?.length || 0}}/{{deck.sizeLimit}}</span>
+                </div>
+              </div>
+
+              <!-- Action buttons in card footer -->
+              <ng-template pTemplate="footer">
+                <div class="flex justify-center gap-4">
+                  <button pButton icon="pi pi-pencil" label="Edit"
+                          class="p-button-info"
+                          (click)="viewDeck(deck.id)"></button>
+                  <button pButton icon="pi pi-trash" label="Delete"
+                          class="p-button-danger"
+                          (click)="confirmDeleteDeck(deck)"></button>
+                </div>
+              </ng-template>
+            </p-card>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- Confirmation dialog for deck deletion -->
+  <p-confirmDialog [style]="{width: '450px'}"
+                   acceptButtonStyleClass="p-button-danger"
+                   rejectButtonStyleClass="p-button-text">
+  </p-confirmDialog>
+
+  <!-- Deck Details Dialog -->
+  <p-dialog [header]="'Deck Name: ' + selectedDeck?.deckName || 'Deck Details'" [(visible)]="dialogVisible"
+            [modal]="true"
+            [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }"
+            [style]="{ width: '80vw', maxWidth: '1200px' }"
+            [draggable]="false"
+            [resizable]="false"
+            styleClass="bg-[#3f2b68] text-[#e6d3ff]">
+    <div *ngIf="selectedDeck" class="deck-details">
+      <!-- Deck summary information -->
+      <div class="deck-info mb-4 p-3 bg-[#352557] rounded-lg">
+        <span class="mr-4"><span class="font-medium">Type:</span> {{selectedDeck.deckType}}</span>
+        <span class="mr-4"><span class="font-medium">Cards:</span> {{selectedDeck.cards?.length || 0}}/{{selectedDeck.sizeLimit}}</span>
+        <span *ngIf="selectedDeck.commander"><span class="font-medium">Commander:</span> {{selectedDeck.commander.name}}</span>
+      </div>
+
+      <!-- Card addition form section -->
+      <div class="card-addition mb-6 p-4 bg-[#352557] rounded-lg">
+        <h3 class="text-lg font-medium mb-3">Add Cards to Deck</h3>
+        <div class="flex flex-col md:flex-row gap-3">
+          <!-- Card search input -->
+          <div class="flex-grow relative">
+            <p-autocomplete [(ngModel)]="newCardName"
+                            [suggestions]="cardSuggestions"
+                            (completeMethod)="searchCardSuggestions($event)"
+                            placeholder="Search for card name..."
+                            [minLength]="2"
+                            class="w-full"
+                            styleClass="w-full"
+                            inputStyleClass="w-full h-11 pr-10">
+            </p-autocomplete>
+          </div>
+          <!-- Quantity selector -->
+          <div class="flex items-center gap-2">
+            <span class="text-sm whitespace-nowrap">Quantity:</span>
+            <p-inputNumber [(ngModel)]="cardQuantity" [min]="1" [max]="99" [showButtons]="true" buttonLayout="horizontal"
+                           inputStyleClass="w-16 text-center" styleClass="w-24" [step]="1">
+            </p-inputNumber>
+          </div>
+          <!-- Add to queue button -->
+          <button pButton icon="pi pi-plus" label="Add to Queue" class="p-button-sm p-button-outlined p-button-success"
+                  (click)="addToQueue()" [disabled]="!newCardName"></button>
+        </div>
+
+        <!-- Card queue display -->
+        <div *ngIf="cardQueue.length > 0" class="mt-4">
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="text-md font-medium">Cards to Add ({{getTotalCardsInQueue()}})</h4>
+            <div class="flex gap-2">
+              <!-- Queue management buttons -->
+              <button pButton icon="pi pi-trash" class="p-button-sm p-button-danger p-button-text"
+                      (click)="clearQueue()" pTooltip="Clear queue"></button>
+              <button pButton icon="pi pi-check" label="Add All to Deck" class="p-button-sm p-button-success"
+                      (click)="addCardsToDeck()" [loading]="addingCards"></button>
+            </div>
+          </div>
+          <!-- Queue item list -->
+          <ul class="queue-list grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <li *ngFor="let item of cardQueue; let i = index" class="flex justify-between items-center p-2 bg-[#2c1d49] rounded">
+              <span>{{item.name}} <span class="text-xs text-purple-300">({{item.quantity}}x)</span></span>
+              <button pButton icon="pi pi-times" class="p-button-sm p-button-text p-button-rounded p-button-danger"
+                      (click)="removeFromQueue(i)"></button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Existing cards display section -->
+      <div class="max-h-[60vh] overflow-y-auto pr-3">
+        <!-- Commander display (for Commander decks) -->
+        <div *ngIf="selectedDeck.deckType === 'COMMANDER' && selectedDeck.commander" class="mb-6">
+          <h3 class="text-xl font-semibold text-purple-300 mb-3 pb-2 border-b border-purple-600">Commander</h3>
+          <div class="p-2 flex items-center group relative">
+            <span class="cursor-pointer hover:text-purple-300">{{selectedDeck.commander.name}}</span>
+            <!-- Card preview on hover -->
+            <div class="hidden group-hover:block fixed z-50" style="left: 60%; transform: translateY(-50%)">
+              <div class="bg-[#2c1d49] p-2 rounded-lg shadow-lg">
+                <img *ngIf="selectedDeck.commander.image_uris?.normal" [src]="selectedDeck.commander.image_uris?.normal"
+                     alt="{{selectedDeck.commander.name}}" class="max-h-80 w-auto">
+                <div *ngIf="!selectedDeck.commander.image_uris?.normal" class="p-4 text-center">
+                  No image available
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Creatures section -->
+        <div *ngIf="getCardsByType('Creature').length > 0" class="mb-6">
+          <h3 class="text-xl font-semibold text-purple-300 mb-3 pb-2 border-b border-purple-600">
+            Creatures ({{getCardsByType('Creature').length}})
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div *ngFor="let cardGroup of groupCardsByName(getCardsByType('Creature'))"
+                 class="p-2 border-b border-purple-700/50 flex items-center justify-between group relative">
+              <div class="flex items-center">
+                <span class="cursor-pointer hover:text-purple-300">{{cardGroup.name}}</span>
+                <span *ngIf="cardGroup.count > 1" class="ml-2 px-2 bg-[#4b356c] rounded-full text-xs">{{cardGroup.count}}x</span>
+              </div>
+              <button pButton icon="pi pi-minus"
+                      class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                      pTooltip="Remove one copy"
+                      (click)="removeCardFromDeck(cardGroup.card)"></button>
+              <!-- Card preview on hover -->
+              <div class="hidden group-hover:block fixed z-50" style="left: 60%; transform: translateY(-50%)">
+                <div class="bg-[#2c1d49] p-2 rounded-lg shadow-lg">
+                  <img *ngIf="cardGroup.card.image_uris?.normal" [src]="cardGroup.card.image_uris?.normal"
+                       alt="{{cardGroup.name}}" class="max-h-80 w-auto">
+                  <div *ngIf="!cardGroup.card.image_uris?.normal" class="p-4 text-center">
+                    No image available
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sorceries section -->
+        <div *ngIf="getCardsByType('Sorcery').length > 0" class="mb-6">
+          <h3 class="text-xl font-semibold text-purple-300 mb-3 pb-2 border-b border-purple-600">
+            Sorceries ({{getCardsByType('Sorcery').length}})
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div *ngFor="let cardGroup of groupCardsByName(getCardsByType('Sorcery'))"
+                 class="p-2 border-b border-purple-700/50 flex items-center justify-between group relative">
+              <div class="flex items-center">
+                <span class="cursor-pointer hover:text-purple-300">{{cardGroup.name}}</span>
+                <span *ngIf="cardGroup.count > 1" class="ml-2 px-2 bg-[#4b356c] rounded-full text-xs">{{cardGroup.count}}x</span>
+              </div>
+              <button pButton icon="pi pi-minus"
+                      class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                      pTooltip="Remove one copy"
+                      (click)="removeCardFromDeck(cardGroup.card)"></button>
+              <!-- Card preview on hover -->
+              <div class="hidden group-hover:block fixed z-50" style="left: 60%; transform: translateY(-50%)">
+                <div class="bg-[#2c1d49] p-2 rounded-lg shadow-lg">
+                  <img *ngIf="cardGroup.card.image_uris?.normal" [src]="cardGroup.card.image_uris?.normal"
+                       alt="{{cardGroup.name}}" class="max-h-80 w-auto">
+                  <div *ngIf="!cardGroup.card.image_uris?.normal" class="p-4 text-center">
+                    No image available
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Instants section -->
+        <div *ngIf="getCardsByType('Instant').length > 0" class="mb-6">
+          <h3 class="text-xl font-semibold text-purple-300 mb-3 pb-2 border-b border-purple-600">
+            Instants ({{getCardsByType('Instant').length}})
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div *ngFor="let cardGroup of groupCardsByName(getCardsByType('Instant'))"
+                 class="p-2 border-b border-purple-700/50 flex items-center justify-between group relative">
+              <div class="flex items-center">
+                <span class="cursor-pointer hover:text-purple-300">{{cardGroup.name}}</span>
+                <span *ngIf="cardGroup.count > 1" class="ml-2 px-2 bg-[#4b356c] rounded-full text-xs">{{cardGroup.count}}x</span>
+              </div>
+              <button pButton icon="pi pi-minus"
+                      class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                      pTooltip="Remove one copy"
+                      (click)="removeCardFromDeck(cardGroup.card)"></button>
+              <!-- Card preview on hover -->
+              <div class="hidden group-hover:block fixed z-50" style="left: 60%; transform: translateY(-50%)">
+                <div class="bg-[#2c1d49] p-2 rounded-lg shadow-lg">
+                  <img *ngIf="cardGroup.card.image_uris?.normal" [src]="cardGroup.card.image_uris?.normal"
+                       alt="{{cardGroup.name}}" class="max-h-80 w-auto">
+                  <div *ngIf="!cardGroup.card.image_uris?.normal" class="p-4 text-center">
+                    No image available
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Artifacts section -->
+        <div *ngIf="getCardsByType('Artifact').length > 0" class="mb-6">
+          <h3 class="text-xl font-semibold text-purple-300 mb-3 pb-2 border-b border-purple-600">
+            Artifacts ({{getCardsByType('Artifact').length}})
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div *ngFor="let cardGroup of groupCardsByName(getCardsByType('Artifact'))"
+                 class="p-2 border-b border-purple-700/50 flex items-center justify-between group relative">
+              <div class="flex items-center">
+                <span class="cursor-pointer hover:text-purple-300">{{cardGroup.name}}</span>
+                <span *ngIf="cardGroup.count > 1" class="ml-2 px-2 bg-[#4b356c] rounded-full text-xs">{{cardGroup.count}}x</span>
+              </div>
+              <button pButton icon="pi pi-minus"
+                      class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                      pTooltip="Remove one copy"
+                      (click)="removeCardFromDeck(cardGroup.card)"></button>
+              <!-- Card preview on hover -->
+              <div class="hidden group-hover:block fixed z-50" style="left: 60%; transform: translateY(-50%)">
+                <div class="bg-[#2c1d49] p-2 rounded-lg shadow-lg">
+                  <img *ngIf="cardGroup.card.image_uris?.normal" [src]="cardGroup.card.image_uris?.normal"
+                       alt="{{cardGroup.name}}" class="max-h-80 w-auto">
+                  <div *ngIf="!cardGroup.card.image_uris?.normal" class="p-4 text-center">
+                    No image available
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enchantments section -->
+        <div *ngIf="getCardsByType('Enchantment').length > 0" class="mb-6">
+          <h3 class="text-xl font-semibold text-purple-300 mb-3 pb-2 border-b border-purple-600">
+            Enchantments ({{getCardsByType('Enchantment').length}})
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div *ngFor="let cardGroup of groupCardsByName(getCardsByType('Enchantment'))"
+                 class="p-2 border-b border-purple-700/50 flex items-center justify-between group relative">
+              <div class="flex items-center">
+                <span class="cursor-pointer hover:text-purple-300">{{cardGroup.name}}</span>
+                <span *ngIf="cardGroup.count > 1" class="ml-2 px-2 bg-[#4b356c] rounded-full text-xs">{{cardGroup.count}}x</span>
+              </div>
+              <button pButton icon="pi pi-minus"
+                      class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                      pTooltip="Remove one copy"
+                      (click)="removeCardFromDeck(cardGroup.card)"></button>
+              <!-- Card preview on hover -->
+              <div class="hidden group-hover:block fixed z-50" style="left: 60%; transform: translateY(-50%)">
+                <div class="bg-[#2c1d49] p-2 rounded-lg shadow-lg">
+                  <img *ngIf="cardGroup.card.image_uris?.normal" [src]="cardGroup.card.image_uris?.normal"
+                       alt="{{cardGroup.name}}" class="max-h-80 w-auto">
+                  <div *ngIf="!cardGroup.card.image_uris?.normal" class="p-4 text-center">
+                    No image available
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lands section -->
+        <div *ngIf="getCardsByType('Land').length > 0" class="mb-6">
+          <h3 class="text-xl font-semibold text-purple-300 mb-3 pb-2 border-b border-purple-600">
+            Lands ({{getCardsByType('Land').length}})
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div *ngFor="let cardGroup of groupCardsByName(getCardsByType('Land'))"
+                 class="p-2 border-b border-purple-700/50 flex items-center justify-between group relative">
+              <div class="flex items-center">
+                <span class="cursor-pointer hover:text-purple-300">{{cardGroup.name}}</span>
+                <span *ngIf="cardGroup.count > 1" class="ml-2 px-2 bg-[#4b356c] rounded-full text-xs">{{cardGroup.count}}x</span>
+              </div>
+              <button pButton icon="pi pi-minus"
+                      class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                      pTooltip="Remove one copy"
+                      (click)="removeCardFromDeck(cardGroup.card)"></button>
+              <!-- Card preview on hover -->
+              <div class="hidden group-hover:block fixed z-50" style="left: 60%; transform: translateY(-50%)">
+                <div class="bg-[#2c1d49] p-2 rounded-lg shadow-lg">
+                  <img *ngIf="cardGroup.card.image_uris?.normal" [src]="cardGroup.card.image_uris?.normal"
+                       alt="{{cardGroup.name}}" class="max-h-80 w-auto">
+                  <div *ngIf="!cardGroup.card.image_uris?.normal" class="p-4 text-center">
+                    No image available
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!selectedDeck.cards?.length" class="italic text-[#c9aeff] text-center p-4">
+          No cards in this deck.
+        </div>
+      </div>
+    </div>
+    <div *ngIf="!selectedDeck" class="text-center p-4">
+      <span>Loading deck information...</span>
+    </div>
+  </p-dialog>
+</div>

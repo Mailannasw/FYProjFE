@@ -5,6 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { Dialog } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { DataService } from '../services/data.service';
+import {ToastModule} from 'primeng/toast';
+import {MessageService} from 'primeng/api';
+import {catchError, of} from 'rxjs';
 
 interface AutoCompleteCompleteEvent {
   originalEvent: Event;
@@ -19,109 +22,136 @@ interface Definition {
 interface Card {
   id: string;
   name: string;
-  imageUrl?: string;
-  type?: string;
-  manaCost?: string;
-  text?: string;
+  image_uris?: {
+    small?: string;
+    normal?: string;
+    large?: string;
+  };
+  type_line?: string;
+  mana_cost?: string;
+  oracle_text?: string;
   power?: string;
   toughness?: string;
   loyalty?: string;
-  setName?: string;
+  set_name?: string;
 }
 
+// Many components used from PrimeNG library (PrimeNG, 2025)
 @Component({
   selector: 'app-home',
-  imports: [CommonModule, AutoCompleteModule, FormsModule, Dialog, ButtonModule],
+  imports: [CommonModule, AutoCompleteModule, FormsModule, Dialog, ButtonModule, ToastModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
-  standalone: true
+  standalone: true,
+  providers: [MessageService]
 })
 export class HomeComponent {
 
-  // Word definition variables
-  definition: Definition | null = null;
-  searchedWord: string = '';
-  filteredWords: string[] = [];
+  definition: Definition | null = null;   // Current word definition being displayed
+  searchedWord: string = '';              // Current word being searched
+  filteredWords: string[] = [];           // Filtered list of words for autocomplete
+  // List oMagic keywords for autocomplete suggestions
   availableWords: string[] = ['Vigilance', 'Deathtouch', 'Double Strike', 'First Strike', 'Flying', 'Haste', 'Lifelink', 'Reach',
     'Trample', 'Tap', 'Destroy', 'Permanent', 'Discard', 'Enchant', 'Exile', 'Flash', 'Goad', 'Hexproof',
     'Indestructible', 'Mana', 'Menace', 'Mulligan', 'Planeswalker', 'Sacrifice', 'Scry', 'Spell', 'Token'];
 
-  // Card search variables
-  cardName: string = '';
-  selectedCard: Card | null = null;
-  filteredCardNames: string[] = [];
+  cardName: string = '';                // Current card name being searched
+  selectedCard: Card | null = null;     // Currently selected card details
+  filteredCardNames: string[] = [];     // Filtered list of card names for autocomplete
 
-  // Dialog(modal) variables
-  visible: boolean = false;
-  dialogHeader: string = '';
+  visible: boolean = false;             // Visibility of definition/card dialog
+  turnHelpVisible: boolean = false;     // Visibility of turn help dialog
+  dialogHeader: string = '';            // Header text for the current dialog
 
-  constructor(private dataService: DataService) {}
+  constructor(private dataService: DataService, private messageService: MessageService) {
 
+  }
 
-  ////////////// Word Definition methods
+  // Shows turn help dialog
+  showTurnHelpDialog() {
+    this.turnHelpVisible = true;
+  }
 
-  // Autocomplete search bar using PrimeNG. Every letter entered filters matching words into an [] for live display
+  // Filters available words based on user input for autocomplete suggestions
+  // @param event - autocomplete event containing the current query
   wordSearchSuggestions(event: AutoCompleteCompleteEvent) {
     this.filteredWords = this.availableWords.filter(item =>
       item.toLowerCase().includes(event.query.toLowerCase()));
   }
 
-  //
+  // Shows definition dialog with that word's definition
+  // Grabs definition from backend and resets search state
   showDefinitionDialog() {
     this.resetDialogState();
     this.dialogHeader = this.searchedWord;
     this.dataService.getDefinition(this.searchedWord).subscribe(response => {
-      this.definition = response;       // response: what is returned from BE
+      this.definition = response;
     });
     this.visible = true;
 
-    this.searchedWord = '';             // empties definition search bar to blank string
-    this.filteredWords = [];            // empties the filteredWords array
+    this.searchedWord = '';     // Reset search state
+    this.filteredWords = [];
   }
 
-
-  ////////////// Card search methods
-
-  //
+  // Fetches card name suggestions from the API based on user input
+  // @param event - autocomplete event containing current query
   searchCardSuggestions(event: AutoCompleteCompleteEvent) {
-    if (event.query.length < 2) {
+    if (event.query.length < 2) {     // Minimum length to get suggestions
       this.filteredCardNames = [];
       return;
     }
     this.dataService.getCardNameSuggestions(event.query).subscribe(response => {
       if (response?.data) {
-        this.filteredCardNames = response.data.slice(0, 25); // Limit to 25 suggestions because there's 1000s of cards
+        this.filteredCardNames = response.data.slice(0, 25);      // Limit to 25 suggestions
       }
     });
   }
 
-  //
+  // Shows card dialog with selected card details
   showCardDialog() {
     this.resetDialogState();
     this.dialogHeader = this.cardName;
-    this.dataService.getCardsByName(this.cardName).subscribe(cards => {
-      if (cards?.length > 0) {
-        this.dataService.getCardById(cards[0].id).subscribe(card => {
-          this.selectedCard = card;
-        });
+
+    this.dataService.getCardsByName(this.cardName).pipe(
+      catchError(error => {
+        this.visible = false;     // Don't show dialog if error
+
+        if (error.status === 404) {     // if no cards found
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Card Not Found',
+            detail: 'Either more than one card matched your search, or 0 cards matched. Try again.',
+            life: 5000
+          });
+        } else {                        // if other error
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'An error occurred while searching for the card.',
+            life: 5000
+          });
+        }
+        return of(null);
+      })
+    ).subscribe(card => {     // if card found, show dialog
+      if (card) {
+        this.selectedCard = card;
+        this.visible = true;
       }
     });
-    this.visible = true;
 
-    this.cardName = '';
+    this.cardName = '';                 // Reset search state
     this.filteredCardNames = [];
   }
 
-
-  ////////////// Dialog methods
-
-  // resets the word definition or card info on the dialog(modal)
+  // Reset dialog state to ensure clean state after closing
   private resetDialogState() {
     this.definition = null;
     this.selectedCard = null;
   }
 
-  // depending on the search bar used and what is passed in, it will choose which dialog to show
+  // Determines which dialog to show based on the search input
+  // Routes to either word definition or card search based on which field has content
   showDialog() {
     if (this.searchedWord) {
       this.showDefinitionDialog();
@@ -129,5 +159,4 @@ export class HomeComponent {
       this.showCardDialog();
     }
   }
-
 }

@@ -2,12 +2,12 @@
 app.component.css, app.component.html, and app.component.ts are the main component files.
 Anything in here will be consistent across the whole web app (e.g.: menu bar, header, footer, etc)
 -->
-
+<!-- Many components used from PrimeNG library (PrimeNG, 2025) -->
 <div class="card">
+  <!-- Menu bar, persistent -->
   <p-menubar [model]="items">
-
     <ng-template #item let-item let-root="root">
-      <a pRipple class="flex items-center p-menubar-item-link">
+      <a pRipple class="flex items-center p-menubar-item-link" [routerLink]="item.routerLink">
         <i *ngIf="item.icon" [class]="item.icon" class="mr-2"></i>
         <span>{{ item.label }}</span>
         <p-badge *ngIf="item.badge" [ngClass]="{ 'ml-auto': !root, 'ml-2': root }" [value]="item.badge" />
@@ -16,10 +16,13 @@ Anything in here will be consistent across the whole web app (e.g.: menu bar, he
       </a>
     </ng-template>
 
+    <!-- Welcome Name when logged in -->
     <ng-template #end>
       <div class="flex items-center gap-2">
+        <span *ngIf="isLoggedIn" class="text-base mr-3">Welcome, {{ username }}</span>
+        <app-signup *ngIf="!isLoggedIn"></app-signup>
+        <!-- Show additional menu items when logged in -->
         <app-login (loginStatusChange)="updateMenuItems()"></app-login>
-        <p-avatar image="https://primefaces.org/cdn/primeng/images/demo/avatar/amyelsner.png" shape="circle" />
       </div>
     </ng-template>
 

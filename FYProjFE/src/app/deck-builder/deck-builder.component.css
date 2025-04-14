@@ -1,0 +1,63 @@
+:host {
+  display: block;
+}
+
+::ng-deep .p-autocomplete .p-inputtext {
+  background-color: #e6d3ff !important;
+  color: #2c1d49 !important;
+}
+
+::ng-deep .p-autocomplete .p-inputtext::placeholder {
+  color: #6b4e8a !important;
+  text-align: center;
+}
+
+::ng-deep .p-dropdown {
+  background-color: #e6d3ff !important;
+}
+
+::ng-deep .p-dropdown-panel {
+  background-color: #e6d3ff !important;
+  color: #2c1d49 !important;
+}
+
+::ng-deep .p-dropdown-item {
+  color: #2c1d49 !important;
+}
+
+::ng-deep .p-dropdown-item:hover {
+  background-color: #d3b7ff !important;
+}
+
+::ng-deep .p-dropdown-item.p-highlight {
+  background-color: #c9aeff !important;
+  color: #2c1d49 !important;
+}
+
+::ng-deep .p-inputtext {
+  background-color: #e6d3ff !important;
+  color: #2c1d49 !important;
+}
+
+.card-preview {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+.card-preview:hover {
+  transform: scale(1.02);
+}
+
+.form-container {
+  background-color: #352557;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.section-header {
+  color: #c9aeff;
+  border-bottom: 1px solid #6b4e8a;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
